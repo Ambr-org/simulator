@@ -1,24 +1,25 @@
-# simulator
+# Browser
 
+-------
 simulator include 3 modules,  Node, Dag browser, wallet
 
 
+### need implemented in node modules
 
-#need implemented in node modules
+* p2p network
+* crypto ecdsa & hash algorithm
+* consus
+* rpc server/http implement replaced
 
-*1. p2p network
-*2. crypto ecdsa & hash algorithm
-*3. consus
+### need implemented in Dag browser
 
-#need implemented in Dag browser
+* communicate with node
+* view the node & unit information
+* monitor the changes from the node
 
-*1. communicate with node
-*2. view the node & unit information
-*3. monitor the changes from the node
+### need implemented in wallet module
 
-#need implemented in wallet module
-
-*1. create the account
-*2. manager the accounts
-*3. transfer to address
-*4. confirm the transfer
+* create the account
+* manager the accounts
+* transfer to address
+* confirm the transfer
