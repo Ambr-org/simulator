@@ -20,9 +20,29 @@ type Pair struct {
 	S *big.Int
 }
 
+type Key struct {
+	X *big.Int
+	Y *big.Int
+}
+
+func (p *Key) IntoPublicKey() *ecdsa.PublicKey {
+	return &ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     p.X,
+		Y:     p.Y,
+	}
+}
+
 type PublicKey struct {
 	Compare
 	ecdsa.PublicKey
+}
+
+func FromKey(k *Key) *PublicKey {
+	p := k.IntoPublicKey()
+	return &PublicKey{
+		PublicKey: *p,
+	}
 }
 
 func (p *PublicKey) Equals(o *PublicKey) bool {

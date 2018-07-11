@@ -6,99 +6,85 @@
 package protocol
 
 import (
-	"fmt"
 	"math/big"
+	"strings"
 )
 
-// An Encoding is a radix 58 encoding/decoding scheme.
-type Encoding struct {
-	alphabet  [58]byte
-	decodeMap [256]int64
+// alphabet is the modified base58 alphabet used by Bitcoin.
+const BTCAlphabet = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+const FlickrAlphabet = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"
+
+var bigRadix = big.NewInt(58)
+var bigZero = big.NewInt(0)
+
+// Decode decodes a modified base58 string to a byte slice, using BTCAlphabet
+func Base58Decode(b string) []byte {
+	return DecodeAlphabet(b, BTCAlphabet)
 }
 
-func encoding(alphabet []byte) *Encoding {
-	enc := &Encoding{}
-	copy(enc.alphabet[:], alphabet[:])
-	for i := range enc.decodeMap {
-		enc.decodeMap[i] = -1
-	}
-	for i, b := range enc.alphabet {
-		enc.decodeMap[b] = int64(i)
-	}
-	return enc
+// Encode encodes a byte slice to a modified base58 string, using BTCAlphabet
+func Base58Encode(b []byte) string {
+	return EncodeAlphabet(b, BTCAlphabet)
 }
 
-// FlickrEncoding is the encoding scheme used for Flickr's short URLs.
-var FlickrEncoding = encoding([]byte("123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"))
+// DecodeAlphabet decodes a modified base58 string to a byte slice, using alphabet.
+func DecodeAlphabet(b, alphabet string) []byte {
+	answer := big.NewInt(0)
+	j := big.NewInt(1)
 
-// RippleEncoding is the encoding scheme used for Ripple addresses.
-var RippleEncoding = encoding([]byte("rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz"))
+	for i := len(b) - 1; i >= 0; i-- {
+		tmp := strings.IndexAny(alphabet, string(b[i]))
+		if tmp == -1 {
+			return []byte("")
+		}
+		idx := big.NewInt(int64(tmp))
+		tmp1 := big.NewInt(0)
+		tmp1.Mul(j, idx)
 
-// BitcoinEncoding is the encoding scheme used for Bitcoin addresses.
-var BitcoinEncoding = encoding([]byte("123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"))
-
-var radix = big.NewInt(58)
-
-func reverse(data []byte) {
-	for i, j := 0, len(data)-1; i < j; i, j = i+1, j-1 {
-		data[i], data[j] = data[j], data[i]
+		answer.Add(answer, tmp1)
+		j.Mul(j, bigRadix)
 	}
-}
 
-// Encode encodes the number represented in the byte array base 10.
-func (encoding *Encoding) Encode(src []byte) ([]byte, error) {
-	if len(src) == 0 {
-		return []byte{}, nil
-	}
-	n, ok := new(big.Int).SetString(string(src), 10)
-	if !ok {
-		return nil, fmt.Errorf("expecting a number but got %q", src)
-	}
-	bytes := make([]byte, 0, len(src))
-	for _, c := range src {
-		if c == '0' {
-			bytes = append(bytes, encoding.alphabet[0])
-		} else {
+	tmpval := answer.Bytes()
+
+	var numZeros int
+	for numZeros = 0; numZeros < len(b); numZeros++ {
+		if b[numZeros] != alphabet[0] {
 			break
 		}
 	}
-	zerocnt := len(bytes)
-	mod := new(big.Int)
-	zero := big.NewInt(0)
-	for {
-		switch n.Cmp(zero) {
-		case 1:
-			n.DivMod(n, radix, mod)
-			bytes = append(bytes, encoding.alphabet[mod.Int64()])
-		case 0:
-			reverse(bytes[zerocnt:])
-			return bytes, nil
-		default:
-			return nil, fmt.Errorf("expecting a positive number in base58 encoding but got %q", n)
-		}
-	}
+	flen := numZeros + len(tmpval)
+	val := make([]byte, flen, flen)
+	copy(val[numZeros:], tmpval)
+
+	return val
 }
 
-// Decode decodes the base58 encoded bytes.
-func (encoding *Encoding) Decode(src []byte) ([]byte, error) {
-	if len(src) == 0 {
-		return []byte{}, nil
+// Encode encodes a byte slice to a modified base58 string, using alphabet
+func EncodeAlphabet(b []byte, alphabet string) string {
+	x := new(big.Int)
+	x.SetBytes(b)
+
+	answer := make([]byte, 0, len(b)*136/100)
+	for x.Cmp(bigZero) > 0 {
+		mod := new(big.Int)
+		x.DivMod(x, bigRadix, mod)
+		answer = append(answer, alphabet[mod.Int64()])
 	}
-	var zeros []byte
-	for i, c := range src {
-		if c == encoding.alphabet[0] && i < len(src)-1 {
-			zeros = append(zeros, '0')
-		} else {
+
+	// leading zero bytes
+	for _, i := range b {
+		if i != 0 {
 			break
 		}
+		answer = append(answer, alphabet[0])
 	}
-	n := new(big.Int)
-	var i int64
-	for _, c := range src {
-		if i = encoding.decodeMap[c]; i < 0 {
-			return nil, fmt.Errorf("invalid character '%c' in decoding a base58 string \"%s\"", c, src)
-		}
-		n.Add(n.Mul(n, radix), big.NewInt(i))
+
+	// reverse
+	alen := len(answer)
+	for i := 0; i < alen/2; i++ {
+		answer[i], answer[alen-1-i] = answer[alen-1-i], answer[i]
 	}
-	return n.Append(zeros, 10), nil
+
+	return string(answer)
 }
