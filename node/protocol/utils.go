@@ -6,19 +6,22 @@
 package protocol
 
 import (
-	"Ambr/utils"
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/gob"
 	"errors"
 	"log"
+	"time"
 )
 
 func Marshal(o interface{}) ([]byte, error) {
 	var buf bytes.Buffer
 	// Create an encoder and send a value.
 	enc := gob.NewEncoder(&buf)
+	gob.Register(Key{})
+	gob.Register(HashKeyType{})
+	gob.Register(time.Time{})
 	err := enc.Encode(o)
 	if err != nil {
 		log.Fatal("encode:", err)
@@ -70,7 +73,7 @@ func GetBytes(datas ...interface{}) ([][]byte, error) {
 
 	l := [][]byte{}
 	for _, data := range datas {
-		buf, e := utils.Marshal(data)
+		buf, e := Marshal(data)
 		if e != nil {
 			return nil, e
 		}

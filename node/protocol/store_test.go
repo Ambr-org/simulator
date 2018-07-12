@@ -12,7 +12,7 @@ func Test_store(t *testing.T) {
 	defer db.Close()
 
 	signuature := NewSignature()
-	u, e := NewUnit(signuature.PublicKey, DefaultHashKey, UnitSend, 333)
+	u, e := NewUnit(signuature.PublicKey.GetKeyData(), DefaultHashKey, UnitSend, 333)
 	if e != nil {
 		t.Fatal(e)
 	}

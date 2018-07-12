@@ -86,12 +86,12 @@ func (p *DB) SaveUnit(u *Unit) error {
 	})
 }
 
-func (p *DB) GetAccount(key HashKeyType) (*Account, error) {
+func (p *DB) GetAccount(address string) (*Account, error) {
 	var content []byte
 	p.Context.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte(bucketAccounts))
 		if b != nil {
-			content = b.Get(key.Bytes())
+			content = b.Get([]byte(address))
 		}
 		return nil
 	})
@@ -116,6 +116,6 @@ func (p *DB) SaveAccount(u *Account) error {
 		if e != nil {
 			return e
 		}
-		return b.Put(u.HashKey.Bytes(), bs)
+		return b.Put([]byte(u.Address), bs)
 	})
 }

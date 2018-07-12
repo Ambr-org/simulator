@@ -6,9 +6,13 @@
 package protocol
 
 import (
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
 	"crypto/rand"
+	"encoding/gob"
+	"errors"
+	"log"
 	"math/big"
 	"reflect"
 )
@@ -25,12 +29,36 @@ type Key struct {
 	Y *big.Int
 }
 
+func UnMarshalKey(keyBuf []byte) (*Key, error) {
+	u := &Key{}
+	var buf = bytes.Buffer{}
+	buf.Write(keyBuf)
+	// Create a decoder and receive a value.
+	dec := gob.NewDecoder(&buf)
+	err := dec.Decode(u)
+	if err != nil {
+		log.Fatal("decode key:", err)
+		return nil, err
+	}
+
+	return u, nil
+}
+
 func (p *Key) IntoPublicKey() *ecdsa.PublicKey {
 	return &ecdsa.PublicKey{
 		Curve: elliptic.P256(),
 		X:     p.X,
 		Y:     p.Y,
 	}
+}
+
+func (p *Key) GetBuffer() ([]byte, error) {
+	buf, e := Marshal(p)
+	if e != nil {
+		return nil, nil
+	}
+
+	return buf, nil
 }
 
 type PublicKey struct {
@@ -45,6 +73,20 @@ func FromKey(k *Key) *PublicKey {
 	}
 }
 
+//ambr address-> publickey
+func FromAddress(addr string) (*PublicKey, error) {
+	buf := Base58Decode(addr)
+	if buf == nil {
+		return nil, errors.New("invalid base58 character")
+	}
+
+	key, e := UnMarshalKey(buf)
+	if e != nil {
+		return nil, e
+	}
+	return FromKey(key), nil
+}
+
 func (p *PublicKey) Equals(o *PublicKey) bool {
 	if o == nil {
 		return false
@@ -54,6 +96,24 @@ func (p *PublicKey) Equals(o *PublicKey) bool {
 
 func (p *PublicKey) Verify(data []byte, pair *Pair) bool {
 	return ecdsa.Verify(&p.PublicKey, data, pair.R, pair.S)
+}
+
+func (p *PublicKey) GetKeyData() *Key {
+	return &Key{
+		X: p.X,
+		Y: p.Y,
+	}
+}
+
+//address translate
+//reduce p256
+func (p *PublicKey) ToAddress() (string, error) {
+	k := p.GetKeyData()
+	buf, e := k.GetBuffer()
+	if e != nil {
+		return "", nil
+	}
+	return Base58Encode(buf), nil
 }
 
 type PrivateKey struct {

@@ -35,7 +35,7 @@ func DecodeAlphabet(b, alphabet string) []byte {
 	for i := len(b) - 1; i >= 0; i-- {
 		tmp := strings.IndexAny(alphabet, string(b[i]))
 		if tmp == -1 {
-			return []byte("")
+			return nil
 		}
 		idx := big.NewInt(int64(tmp))
 		tmp1 := big.NewInt(0)
