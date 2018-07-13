@@ -124,6 +124,7 @@ func (p *Unit) Equal(u *Unit) bool {
 		u.OtherUnit == p.OtherUnit
 }
 
+//send
 func (p *Unit) NeedSignedBuffer() ([]byte, error) {
 	bufs, e := GetBytes(p.Creator, p.Previous, p.UnitType, p.AccountBalance, p.TimeStamp)
 	if e != nil {
@@ -132,6 +133,7 @@ func (p *Unit) NeedSignedBuffer() ([]byte, error) {
 	return ArrayToBuf(bufs)
 }
 
+//recv buffer
 func (p *Unit) NeedSignedBuffer2() ([]byte, error) {
 	bufs, e := GetBytes(p.Creator, p.Previous, p.UnitType, p.AccountBalance, p.TimeStamp, p.OtherUnit)
 	if e != nil {
@@ -172,6 +174,7 @@ func (p *Unit) Sign(key *PrivateKey, buf []byte) error {
 	return nil
 }
 
+//update self to db
 func (p *Unit) Update(db *DB) error {
 	if db == nil {
 		return errors.New("invalid parameter")
@@ -179,6 +182,7 @@ func (p *Unit) Update(db *DB) error {
 	return db.SaveUnit(p)
 }
 
+//calculate the hash with given buffer
 func (p *Unit) UpdateHash() error {
 	hash, err := GetObjectHash(p.Creator, p.Previous, p.UnitType, p.AccountBalance, p.TimeStamp)
 	if err != nil {

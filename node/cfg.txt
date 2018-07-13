@@ -1,0 +1,18 @@
+<app>
+    <general>
+        <item>xx</item>
+    </general>
+
+		<p2p>
+			<port>7777</port>
+			<maxpeers>5</maxpeers>
+		</p2p>
+    <seeds>
+        <seed>
+						<dns></dns>
+						<ip>192.168.1.2</ip>
+						<port>7777</port>
+        </seed>
+    </seeds>
+	<cache></cache>
+</app>

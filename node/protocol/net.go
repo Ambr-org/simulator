@@ -5,6 +5,12 @@
 
 package protocol
 
+
+type Message struct {
+	Type int32
+	//
+}
+
 type Network struct {
 }
 
@@ -13,6 +19,14 @@ func NewNetwork() *Network {
 	return nil
 }
 
+func (p *Network) OnMsgReceived(m *Message) {
+
+}
+
 func (p *Network) Broadcast(u *Unit) error {
+	return nil
+}
+
+func (p *Network) Vote(u1, u2 HashKeyType) error {
 	return nil
 }
