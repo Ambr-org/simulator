@@ -19,9 +19,9 @@ type Account struct {
 	LastUnit  HashKeyType
 
 	//should be key for account struct
-	Address string
-	DB      *DB
-	Network *Network
+	Address     string
+	DB          *DB
+	Transporter Transporter
 
 	//pending units need to be confirm
 	//by user
@@ -32,9 +32,19 @@ func LoadAccount(db *DB, hash HashKeyType) (*Account, error) {
 	return nil, nil
 }
 
-func NewAccount(db *DB, key *Key) *Account {
+func NewAccount(db *DB, key *Key, tr Transporter) *Account {
+	if db == nil || key == nil || tr == nil {
+		return nil
+	}
+	addr, err := key.ToAddress()
+	if err != nil {
+		return nil
+	}
+
 	return &Account{
-		Owner: key,
+		Owner:       key,
+		Transporter: tr,
+		Address:     addr,
 	}
 }
 
@@ -65,7 +75,9 @@ func (p *Account) VerifyRecvUnit(u *Unit) error {
 	}
 	if u2.OtherUnit.IsNullOrEmpty() {
 		fmt.Println("fucking, conflict, vote needed")
-		return p.Network.Vote(u.HashKey, u2.OtherUnit)
+		//return p.Transporter.Vote(u.HashKey, u2.OtherUnit)
+		//TODO: vote message
+		return p.Transporter.Publish(nil)
 	}
 	amount1, ex1 := u.GetAmount(p.DB)
 	if ex1 != nil {
@@ -219,7 +231,8 @@ func (p *Account) StartTransfer(from *PrivateKey, to *PublicKey, amount int64) e
 	}
 
 	//start transfer
-	return p.Network.Broadcast(u)
+	//TODO: createdunit, send?
+	return p.Transporter.Publish(u)
 }
 
 func (p *Account) ConfirmTransfer(u *Unit) error {
@@ -262,7 +275,7 @@ func (p *Account) ConfirmTransfer(u *Unit) error {
 	}
 
 	//confirm
-	return p.Network.Broadcast(u)
+	return p.Transporter.Publish(u)
 }
 
 func UnMarshalAccount(b []byte) (*Account, error) {

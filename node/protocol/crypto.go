@@ -61,6 +61,16 @@ func (p *Key) GetBuffer() ([]byte, error) {
 	return buf, nil
 }
 
+//address translate
+//reduce p256
+func (p *Key) ToAddress() (string, error) {
+	buf, e := p.GetBuffer()
+	if e != nil {
+		return "", nil
+	}
+	return Base58Encode(buf), nil
+}
+
 type PublicKey struct {
 	Compare
 	ecdsa.PublicKey

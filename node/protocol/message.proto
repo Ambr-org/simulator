@@ -1,0 +1,41 @@
+syntax = "proto3"; 
+//protoc --go_out=. message.proto
+package protocol;
+
+message CreatedUnit {
+  
+}
+
+//for test usage
+message VoteRequest {
+  string conflictUnit1 = 1;
+  string confilictUnit2 = 2;
+}
+
+message VoteResponse {
+  string conflictUnit1 = 1;
+  string confilictUnit2 = 2;
+}
+
+message ReplicationRequest {
+
+}
+
+message ReplicationResponse {
+  
+}
+
+message HeartbeatRequest {
+
+}
+
+message HeartbeatResponse {
+  
+}
+
+//for test usage
+message TestMessage {
+  string message = 1;
+  int32 length = 2;
+  int32 cnt = 3;
+}
