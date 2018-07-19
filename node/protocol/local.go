@@ -2,13 +2,17 @@ package protocol
 
 import (
 	"errors"
+	"log"
 	"sync"
+
+	"github.com/golang/protobuf/proto"
 )
 
 type localEndpoint struct {
 	node    *Node
 	index   int32
 	network *LocalNetwork
+	mailbox chan *MsgHeader
 }
 
 //local endpoint
@@ -17,7 +21,17 @@ func newLocalEndpoint(net *LocalNetwork, index int32, node *Node) *localEndpoint
 		network: net,
 		index:   index,
 		node:    node,
+		mailbox: make(chan *MsgHeader),
 	}
+	go func() {
+		m := <-ep.mailbox
+		if m != nil {
+			e := ep.OnMsgReceived(m.sender, m.message)
+			if e != nil {
+				log.Fatal(e)
+			}
+		}
+	}()
 	return ep
 }
 
@@ -29,70 +43,75 @@ func (p *localEndpoint) equals(other *localEndpoint) bool {
 }
 
 //publish a message to network
-func (p *localEndpoint) Publish(m interface{}) error {
+func (p *localEndpoint) Publish(m proto.Message) error {
 	return p.network.Publish(m, p)
 }
 
 //msg dispacher
-func (p *localEndpoint) OnMsgReceived(m interface{}) error {
+func (p *localEndpoint) OnMsgReceived(sender string, m proto.Message) error {
 	if m == nil {
 		return errors.New("invalid parameter")
 	}
 
 	switch t := m.(type) {
 	case *CreatedUnit:
-		return p.OnUnitCreated(t)
+		return p.OnUnitCreated(sender, t)
 	case *VoteRequest:
-		return p.OnVoteRequest(t)
+		return p.OnVoteRequest(sender, t)
 	case *VoteResponse:
-		return p.OnVoteResponse(t)
+		return p.OnVoteResponse(sender, t)
 	case *HeartbeatRequest:
-		return p.OnHeartbeatRequest(t)
+		return p.OnHeartbeatRequest(sender, t)
 	case *HeartbeatResponse:
-		return p.OnHeartbeatResponse(t)
+		return p.OnHeartbeatResponse(sender, t)
 	case *ReplicationRequest:
-		return p.OnReplicationRequest(t)
+		return p.OnReplicationRequest(sender, t)
 	case *ReplicationResponse:
-		return p.OnReplicationResponse(t)
+		return p.OnReplicationResponse(sender, t)
 	default:
 		return errors.New("Unexpected type")
 	}
 }
 
 //created unit received
-func (p *localEndpoint) OnUnitCreated(m *CreatedUnit) error {
+func (p *localEndpoint) OnUnitCreated(sender string, m *CreatedUnit) error {
 	return nil
 }
 
 //vote. while conflict
-func (p *localEndpoint) OnVoteRequest(m *VoteRequest) error {
+func (p *localEndpoint) OnVoteRequest(sender string, m *VoteRequest) error {
 	return nil
 }
 
-func (p *localEndpoint) OnVoteResponse(m *VoteResponse) error {
+func (p *localEndpoint) OnVoteResponse(sender string, m *VoteResponse) error {
 	return nil
 }
 
 //heartbeat to keep peer alived
 //if not provided it's okay
 //libary maintained
-func (p *localEndpoint) OnHeartbeatRequest(m *HeartbeatRequest) error {
+func (p *localEndpoint) OnHeartbeatRequest(sender string, m *HeartbeatRequest) error {
 	return nil
 }
 
-func (p *localEndpoint) OnHeartbeatResponse(m *HeartbeatResponse) error {
+func (p *localEndpoint) OnHeartbeatResponse(sender string, m *HeartbeatResponse) error {
 	return nil
 }
 
 //for replication used
 //request for lost nodes
 //it should be carefully designed
-func (p *localEndpoint) OnReplicationRequest(m *ReplicationRequest) error {
+func (p *localEndpoint) OnReplicationRequest(sender string, m *ReplicationRequest) error {
 	return nil
 }
 
-func (p localEndpoint) OnReplicationResponse(m *ReplicationResponse) error {
+func (p localEndpoint) OnReplicationResponse(sender string, m *ReplicationResponse) error {
 	return nil
+}
+
+type MsgHeader struct {
+	sender  string
+	message proto.Message
 }
 
 type LocalNetwork struct {
@@ -111,6 +130,7 @@ func (p *LocalNetwork) newEndpoint(index int32, node *Node) *localEndpoint {
 	defer p.Unlock()
 	ep := newLocalEndpoint(p, index, node)
 	p.nodes[index] = ep
+
 	return ep
 }
 
@@ -126,7 +146,7 @@ func (p *LocalNetwork) getEndpoint(index int32) *localEndpoint {
 }
 
 //publish a message to network
-func (p *LocalNetwork) Publish(m interface{}, sender *localEndpoint) error {
+func (p *LocalNetwork) Publish(m proto.Message, sender *localEndpoint) error {
 	if sender == nil || m == nil {
 		return errors.New("invalid parameter")
 	}
@@ -135,9 +155,10 @@ func (p *LocalNetwork) Publish(m interface{}, sender *localEndpoint) error {
 	defer p.RUnlock()
 	for k, v := range p.nodes {
 		if k != sender.index {
-			err := v.OnMsgReceived(m)
-			if err != nil {
-				return err
+			//mailbox
+			v.mailbox <- &MsgHeader{
+				sender:  string(sender.index),
+				message: m,
 			}
 		}
 	}

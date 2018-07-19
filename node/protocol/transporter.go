@@ -5,22 +5,26 @@
 
 package protocol
 
+import (
+	"github.com/golang/protobuf/proto"
+)
+
 type Transporter interface {
 	//publish a message to network
-	Publish(m interface{}) error
+	Publish(m proto.Message) error
 	//created unit received
-	OnUnitCreated(m *CreatedUnit) error
+	OnUnitCreated(sender string, m *CreatedUnit) error
 	//vote. while conflict
-	OnVoteRequest(m *VoteRequest) error
-	OnVoteResponse(m *VoteResponse) error
+	OnVoteRequest(sender string, m *VoteRequest) error
+	OnVoteResponse(sender string, m *VoteResponse) error
 	//heartbeat to keep peer alived
 	//if not provided it's okay
 	//libary maintained
-	OnHeartbeatRequest(m *HeartbeatRequest) error
-	OnHeartbeatResponse(m *HeartbeatResponse) error
+	OnHeartbeatRequest(sender string, m *HeartbeatRequest) error
+	OnHeartbeatResponse(sender string, m *HeartbeatResponse) error
 	//for replication used
 	//request for lost nodes
 	//it should be carefully designed
-	OnReplicationRequest(m *ReplicationRequest) error
-	OnReplicationResponse(m *ReplicationResponse) error
+	OnReplicationRequest(sender string, m *ReplicationRequest) error
+	OnReplicationResponse(sender string, m *ReplicationResponse) error
 }
