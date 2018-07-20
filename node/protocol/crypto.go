@@ -24,6 +24,30 @@ type Pair struct {
 	S *big.Int
 }
 
+func UnMarshalPair(keyBuf []byte) (*Pair, error) {
+	u := &Pair{}
+	var buf = bytes.Buffer{}
+	buf.Write(keyBuf)
+	// Create a decoder and receive a value.
+	dec := gob.NewDecoder(&buf)
+	err := dec.Decode(u)
+	if err != nil {
+		log.Fatal("decode pair:", err)
+		return nil, err
+	}
+
+	return u, nil
+}
+
+func (p *Pair) GetBuffer() ([]byte, error) {
+	buf, e := Marshal(p)
+	if e != nil {
+		return nil, nil
+	}
+
+	return buf, nil
+}
+
 type Key struct {
 	X *big.Int
 	Y *big.Int

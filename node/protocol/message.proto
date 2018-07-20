@@ -2,8 +2,21 @@ syntax = "proto3";
 //protoc --go_out=. message.proto
 package protocol;
 
-message CreatedUnit {
-  
+message Payload {
+  //address base58 encoded
+  string creator = 1;
+  string previous = 2;
+  int64  balance = 3;
+  bytes signature = 4;
+}
+
+message SendUnit {
+  Payload payload = 1;
+}
+
+message RecvUnit {
+  Payload payload = 1;
+  string other = 2;
 }
 
 //for test usage

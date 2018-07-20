@@ -13,7 +13,9 @@ type Transporter interface {
 	//publish a message to network
 	Publish(m proto.Message) error
 	//created unit received
-	OnUnitCreated(sender string, m *CreatedUnit) error
+	OnSendUnitArrived(sender string, m *SendUnit) error
+	OnRecvUnitArrived(sender string, m *RecvUnit) error
+
 	//vote. while conflict
 	OnVoteRequest(sender string, m *VoteRequest) error
 	OnVoteResponse(sender string, m *VoteResponse) error

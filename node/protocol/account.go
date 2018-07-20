@@ -230,9 +230,13 @@ func (p *Account) StartTransfer(from *PrivateKey, to *PublicKey, amount int64) e
 		return e5
 	}
 
+	msg, e6 := FromUnitToProto(u)
+	if e6 != nil {
+		return e6
+	}
 	//start transfer
 	//TODO: createdunit, send?
-	return p.Transporter.Publish(FromUnitToProto(u))
+	return p.Transporter.Publish(msg)
 }
 
 func (p *Account) ConfirmTransfer(u *Unit) error {
@@ -273,9 +277,12 @@ func (p *Account) ConfirmTransfer(u *Unit) error {
 	if e5 != nil {
 		return e5
 	}
-
+	msg, e6 := FromUnitToProto(u)
+	if e6 != nil {
+		return e6
+	}
 	//confirm
-	return p.Transporter.Publish(FromUnitToProto(u))
+	return p.Transporter.Publish(msg)
 }
 
 func UnMarshalAccount(b []byte) (*Account, error) {

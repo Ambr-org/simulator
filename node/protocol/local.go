@@ -54,8 +54,10 @@ func (p *localEndpoint) OnMsgReceived(sender string, m proto.Message) error {
 	}
 
 	switch t := m.(type) {
-	case *CreatedUnit:
-		return p.OnUnitCreated(sender, t)
+	case *SendUnit:
+		return p.OnSendUnitArrived(sender, t)
+	case *RecvUnit:
+		return p.OnRecvUnitArrived(sender, t)
 	case *VoteRequest:
 		return p.OnVoteRequest(sender, t)
 	case *VoteResponse:
@@ -73,8 +75,11 @@ func (p *localEndpoint) OnMsgReceived(sender string, m proto.Message) error {
 	}
 }
 
-//created unit received
-func (p *localEndpoint) OnUnitCreated(sender string, m *CreatedUnit) error {
+func (p *localEndpoint) OnSendUnitArrived(sender string, m *SendUnit) error {
+	return nil
+}
+
+func (p *localEndpoint) OnRecvUnitArrived(sender string, m *RecvUnit) error {
 	return nil
 }
 
