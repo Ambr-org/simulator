@@ -191,3 +191,16 @@ func (p *PrivateKey) Sign(data []byte) (*Pair, error) {
 		S: s,
 	}, e
 }
+
+func IsValidAddress(address string) bool {
+	if 160 != len(address) {
+		return false
+	}
+	for _, b := range []byte(address) {
+		if !IsBase58Alpha(b) {
+			return false
+		}
+	}
+
+	return true
+}

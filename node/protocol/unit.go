@@ -55,12 +55,17 @@ type Unit struct {
 }
 
 func NewUnit(creator *Key, previous HashKeyType, ut int32, balance int64) (*Unit, error) {
+	return NewUnit2(creator, previous, ut, balance, nil)
+}
+
+func NewUnit2(creator *Key, previous HashKeyType, ut int32, balance int64, pair *Pair) (*Unit, error) {
 	u := &Unit{
 		UnitType:       ut,
 		AccountBalance: balance,
 		Creator:        creator,
 		Previous:       previous,
 		TimeStamp:      time.Now(),
+		Pair:           pair,
 	}
 	err := u.UpdateHash()
 	if err != nil {

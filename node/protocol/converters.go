@@ -44,11 +44,43 @@ func FromProtoSendToUnit(p *SendUnit) (*Unit, error) {
 	if p == nil {
 		return nil, errors.New("invalid parameter")
 	}
+	pub, err := FromAddress(p.Payload.Creator)
+	if err != nil {
+		return nil, err
+	}
+	key := pub.GetKeyData()
 
-	//NewUnit()
-	return nil, nil
+	pair, e := UnMarshalPair(p.Payload.Signature)
+	if e != nil {
+		return nil, e
+	}
+	return NewUnit2(key, HashKeyType{
+		Value: p.Payload.Previous,
+	}, UnitSend, p.Payload.Balance, pair)
 }
 
 func FromProtoRecvToUnit(p *RecvUnit) (*Unit, error) {
-	return nil, nil
+	if p == nil {
+		return nil, errors.New("invalid parameter")
+	}
+	pub, err := FromAddress(p.Payload.Creator)
+	if err != nil {
+		return nil, err
+	}
+	key := pub.GetKeyData()
+
+	pair, e := UnMarshalPair(p.Payload.Signature)
+	if e != nil {
+		return nil, e
+	}
+	u, e2 := NewUnit2(key, HashKeyType{
+		Value: p.Payload.Previous,
+	}, UnitRecv, p.Payload.Balance, pair)
+	if e2 != nil {
+		return nil, e2
+	}
+	u.OtherUnit = HashKeyType{
+		Value: p.Other,
+	}
+	return u, nil
 }

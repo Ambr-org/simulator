@@ -17,6 +17,10 @@ const FlickrAlphabet = "123456789abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWX
 var bigRadix = big.NewInt(58)
 var bigZero = big.NewInt(0)
 
+func IsBase58Alpha(b byte) bool {
+	return strings.IndexByte(BTCAlphabet, b) >= 0
+}
+
 // Decode decodes a modified base58 string to a byte slice, using BTCAlphabet
 func Base58Decode(b string) []byte {
 	return DecodeAlphabet(b, BTCAlphabet)

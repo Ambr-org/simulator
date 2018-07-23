@@ -63,7 +63,7 @@ func (p *Context) newNode(index int32) *Node {
 		return nil
 	}
 
-	endpoint.node = node
+	endpoint.dispatcher = node
 	return node
 }
 

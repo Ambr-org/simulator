@@ -9,19 +9,20 @@ import (
 )
 
 type localEndpoint struct {
-	node    *Node
-	index   int32
-	network *LocalNetwork
-	mailbox chan *MsgHeader
+	index      int32
+	network    *LocalNetwork
+	mailbox    chan *MsgHeader
+	dispatcher Dispatcher
 }
 
 //local endpoint
-func newLocalEndpoint(net *LocalNetwork, index int32, node *Node) *localEndpoint {
+func newLocalEndpoint(net *LocalNetwork, index int32, disp Dispatcher) *localEndpoint {
+
 	ep := &localEndpoint{
-		network: net,
-		index:   index,
-		node:    node,
-		mailbox: make(chan *MsgHeader),
+		network:    net,
+		index:      index,
+		mailbox:    make(chan *MsgHeader),
+		dispatcher: disp,
 	}
 	go func() {
 		m := <-ep.mailbox
@@ -55,63 +56,24 @@ func (p *localEndpoint) OnMsgReceived(sender string, m proto.Message) error {
 
 	switch t := m.(type) {
 	case *SendUnit:
-		return p.OnSendUnitArrived(sender, t)
+		return p.dispatcher.OnSendUnitArrived(sender, t)
 	case *RecvUnit:
-		return p.OnRecvUnitArrived(sender, t)
+		return p.dispatcher.OnRecvUnitArrived(sender, t)
 	case *VoteRequest:
-		return p.OnVoteRequest(sender, t)
+		return p.dispatcher.OnVoteRequest(sender, t)
 	case *VoteResponse:
-		return p.OnVoteResponse(sender, t)
+		return p.dispatcher.OnVoteResponse(sender, t)
 	case *HeartbeatRequest:
-		return p.OnHeartbeatRequest(sender, t)
+		return p.dispatcher.OnHeartbeatRequest(sender, t)
 	case *HeartbeatResponse:
-		return p.OnHeartbeatResponse(sender, t)
+		return p.dispatcher.OnHeartbeatResponse(sender, t)
 	case *ReplicationRequest:
-		return p.OnReplicationRequest(sender, t)
+		return p.dispatcher.OnReplicationRequest(sender, t)
 	case *ReplicationResponse:
-		return p.OnReplicationResponse(sender, t)
+		return p.dispatcher.OnReplicationResponse(sender, t)
 	default:
 		return errors.New("Unexpected type")
 	}
-}
-
-func (p *localEndpoint) OnSendUnitArrived(sender string, m *SendUnit) error {
-	return nil
-}
-
-func (p *localEndpoint) OnRecvUnitArrived(sender string, m *RecvUnit) error {
-	return nil
-}
-
-//vote. while conflict
-func (p *localEndpoint) OnVoteRequest(sender string, m *VoteRequest) error {
-	return nil
-}
-
-func (p *localEndpoint) OnVoteResponse(sender string, m *VoteResponse) error {
-	return nil
-}
-
-//heartbeat to keep peer alived
-//if not provided it's okay
-//libary maintained
-func (p *localEndpoint) OnHeartbeatRequest(sender string, m *HeartbeatRequest) error {
-	return nil
-}
-
-func (p *localEndpoint) OnHeartbeatResponse(sender string, m *HeartbeatResponse) error {
-	return nil
-}
-
-//for replication used
-//request for lost nodes
-//it should be carefully designed
-func (p *localEndpoint) OnReplicationRequest(sender string, m *ReplicationRequest) error {
-	return nil
-}
-
-func (p localEndpoint) OnReplicationResponse(sender string, m *ReplicationResponse) error {
-	return nil
 }
 
 type MsgHeader struct {
@@ -130,10 +92,10 @@ func newLocalNetwork() *LocalNetwork {
 	}
 }
 
-func (p *LocalNetwork) newEndpoint(index int32, node *Node) *localEndpoint {
+func (p *LocalNetwork) newEndpoint(index int32, disp Dispatcher) *localEndpoint {
 	p.Lock()
 	defer p.Unlock()
-	ep := newLocalEndpoint(p, index, node)
+	ep := newLocalEndpoint(p, index, disp)
 	p.nodes[index] = ep
 
 	return ep

@@ -22,3 +22,22 @@ func Test_ecdsa(t *testing.T) {
 		}
 	}
 }
+
+func Test_address(t *testing.T) {
+	s := NewSignature()
+	if s == nil {
+		t.Fatal("nil sig")
+	}
+	addr, ok := s.PublicKey.ToAddress()
+	if ok != nil {
+		t.Fatal(ok)
+	}
+
+	if !IsValidAddress(addr) {
+		t.Fatal("invalid addr")
+	}
+
+	if IsValidAddress("something else") {
+		t.Fatal("invalid addr")
+	}
+}
