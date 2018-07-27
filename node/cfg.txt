@@ -9,9 +9,9 @@
 		</p2p>
     <seeds>
         <seed>
-						<dns></dns>
-						<ip>192.168.1.2</ip>
-						<port>7777</port>
+			<dns></dns>
+			<ip>192.168.1.2</ip>
+			<port>7777</port>
         </seed>
     </seeds>
 	<cache></cache>

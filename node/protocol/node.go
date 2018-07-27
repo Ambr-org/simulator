@@ -104,8 +104,26 @@ func (p *Node) OnSendUnitArrived(sender string, m *SendUnit) error {
 	if m == nil {
 		return errors.New("invlalid paramenter")
 	}
+	if !IsValidAddress(m.Payload.Creator) {
+		return errors.New("invalid creator")
+	}
 
-	return nil
+	account := p.GetAccount(m.Payload.Creator)
+	if account == nil {
+		//no existing account. no ext
+		//todo: try to request account replication
+		return errors.New("not support")
+	}
+	u, e := FromProtoSendToUnit(m)
+	if e != nil {
+		return e
+	}
+	e2 := account.VerifySendUnit(u)
+	if e2 != nil {
+		return e2
+	}
+
+	return account.AppendUnit(u)
 }
 
 //sender is ip or something address else

@@ -172,6 +172,56 @@ func (p *Account) GetAccountBalance() (int64, error) {
 	return u.AccountBalance, nil
 }
 
+func (p *Account) AppendUnit(u *Unit) error {
+	if u == nil {
+		return errors.New("invalid parameter")
+	}
+	if p.FirstUnit.IsNullOrEmpty() {
+		p.FirstUnit = u.HashKey
+	}
+
+	if p.LastUnit.IsNullOrEmpty() {
+		//no need to change previous
+		p.LastUnit = u.HashKey
+	} else {
+		u2, e2 := p.DB.GetUnit(p.LastUnit)
+		if e2 != nil {
+			return e2
+		}
+
+		//fucking update
+		if u.Previous != u2.HashKey {
+			u.Previous = u2.HashKey
+			ex := u.UpdateHash()
+			if ex != nil {
+				return ex
+			}
+		}
+
+		u2.Next = u.HashKey
+		p.LastUnit = u2.HashKey
+		//save u, u2, account
+		//should within a transaction
+		//but demo , you know
+		e3 := p.DB.SaveUnit(u2)
+		if e3 != nil {
+			return e3
+		}
+	}
+
+	//save u, account
+	e4 := p.DB.SaveUnit(u)
+	if e4 != nil {
+		return e4
+	}
+
+	e5 := p.DB.SaveAccount(p)
+	if e5 != nil {
+		return e5
+	}
+	return nil
+}
+
 //generate unit
 //sign it, then publish it to peers
 func (p *Account) StartTransfer(from *PrivateKey, to *PublicKey, amount int64) error {
@@ -192,27 +242,12 @@ func (p *Account) StartTransfer(from *PrivateKey, to *PublicKey, amount int64) e
 		return err
 	}
 
-	if p.FirstUnit.IsNullOrEmpty() {
-		p.FirstUnit = u.HashKey
-	}
-
-	if p.LastUnit.IsNullOrEmpty() {
-		p.LastUnit = u.HashKey
-	} else {
+	if !p.LastUnit.IsNullOrEmpty() {
 		u2, e2 := p.DB.GetUnit(p.LastUnit)
 		if e2 != nil {
 			return e2
 		}
-		u2.Next = u.HashKey
 		u.Previous = u2.HashKey
-		p.LastUnit = u2.HashKey
-		//save u, u2, account
-		//should within a transaction
-		//but demo , you know
-		e3 := p.DB.SaveUnit(u2)
-		if e3 != nil {
-			return e3
-		}
 	}
 
 	ex := u.SignSend(from)
@@ -220,14 +255,9 @@ func (p *Account) StartTransfer(from *PrivateKey, to *PublicKey, amount int64) e
 		return ex
 	}
 	//save u, account
-	e4 := p.DB.SaveUnit(u)
+	e4 := p.AppendUnit(u)
 	if e4 != nil {
 		return e4
-	}
-
-	e5 := p.DB.SaveAccount(p)
-	if e5 != nil {
-		return e5
 	}
 
 	msg, e6 := FromUnitToProto(u)
