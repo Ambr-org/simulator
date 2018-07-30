@@ -28,8 +28,11 @@ type Account struct {
 	PendingRecvUnits []HashKeyType
 }
 
-func LoadAccount(db *DB, hash HashKeyType) (*Account, error) {
-	return nil, nil
+func LoadAccount(db *DB, address string) (*Account, error) {
+	if db == nil || len(address) <= 0 {
+		return nil, errors.New("invalid address")
+	}
+	return db.GetAccount(address)
 }
 
 func NewAccount(db *DB, key *Key, tr Transporter) *Account {

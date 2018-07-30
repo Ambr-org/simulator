@@ -150,31 +150,103 @@ func (p *PublicKey) ToAddress() (string, error) {
 	return Base58Encode(buf), nil
 }
 
+//define for marshal
+type privateData struct {
+	key *Key
+	d   *big.Int
+}
+
+func (p *privateData) intoPrivateKey() (*PrivateKey, error) {
+	if p.key == nil || p.d == nil {
+		return nil, errors.New("invalid parameter")
+	}
+
+	pub := &ecdsa.PublicKey{
+		Curve: elliptic.P256(),
+		X:     p.key.X,
+		Y:     p.key.Y,
+	}
+	ecdPrivateKey := &ecdsa.PrivateKey{
+		PublicKey: *pub,
+		D:         p.d,
+	}
+	return &PrivateKey{
+		PrivateKey: *ecdPrivateKey,
+	}, nil
+}
+
+func unmarshalPrivateData(bs []byte) (*privateData, error) {
+	if bs == nil || len(bs) <= 0 {
+		return nil, errors.New("invalid paramenter")
+	}
+
+	d := &privateData{}
+	var buf = bytes.Buffer{}
+	buf.Write(bs)
+	// Create a decoder and receive a value.
+	dec := gob.NewDecoder(&buf)
+	err := dec.Decode(d)
+	if err != nil {
+		log.Fatal("decode:", err)
+		return nil, err
+	}
+
+	return d, nil
+}
+
 type PrivateKey struct {
 	Compare
 	ecdsa.PrivateKey
 }
 
-type Signature struct {
-	PrivateKey *PrivateKey
-	PublicKey  *PublicKey
+//implemented for transfer from rpc
+//currently base64 is faster
+func FromStringToPrivateKey(str string) (*PrivateKey, error) {
+	raw, err := Base64Decode(str)
+	if err != nil {
+		return nil, err
+	}
+	pd, err2 := unmarshalPrivateData(raw)
+	if err2 != nil {
+		return nil, err2
+	}
+
+	return pd.intoPrivateKey()
 }
 
-func NewSignature() *Signature {
-	//see http://golang.org/pkg/crypto/elliptic/#P256
-	pubkeyCurve := elliptic.P256()
-	// this generates a public & private key pair
-	//use rand seed to decrease the crash chance
-	privKey, err := ecdsa.GenerateKey(pubkeyCurve, rand.Reader)
+func (p *PrivateKey) getData() *privateData {
+	key := p.GetKeyData()
+	return &privateData{
+		key: key,
+		d:   p.D,
+	}
+}
 
+//base64 format
+func (p *PrivateKey) ToString() (string, error) {
+	privData := p.getData()
+	bs, err := Marshal(privData)
 	if err != nil {
-		return nil
+		return "", err
 	}
+	return Base64Encode(bs), nil
+}
 
-	return &Signature{
-		PrivateKey: &PrivateKey{PrivateKey: *privKey},
-		PublicKey:  &PublicKey{PublicKey: privKey.PublicKey},
+func (p *PrivateKey) ToAddress() (string, error) {
+	pub := p.GetPublicKey()
+	return pub.ToAddress()
+}
+
+func (p *PrivateKey) GetPublicKey() *PublicKey {
+	pub := &p.PrivateKey.PublicKey
+	return &PublicKey{
+		PublicKey: *pub,
 	}
+}
+
+func (p *PrivateKey) GetKeyData() *Key {
+	pubKey := p.GetPublicKey()
+	return pubKey.GetKeyData()
 }
 
 func (p *PrivateKey) Equals(o *PrivateKey) bool {
@@ -203,4 +275,26 @@ func IsValidAddress(address string) bool {
 	}
 
 	return true
+}
+
+type Signature struct {
+	PrivateKey *PrivateKey
+	PublicKey  *PublicKey
+}
+
+func NewSignature() *Signature {
+	//see http://golang.org/pkg/crypto/elliptic/#P256
+	pubkeyCurve := elliptic.P256()
+	// this generates a public & private key pair
+	//use rand seed to decrease the crash chance
+	privKey, err := ecdsa.GenerateKey(pubkeyCurve, rand.Reader)
+
+	if err != nil {
+		return nil
+	}
+
+	return &Signature{
+		PrivateKey: &PrivateKey{PrivateKey: *privKey},
+		PublicKey:  &PublicKey{PublicKey: privKey.PublicKey},
+	}
 }
