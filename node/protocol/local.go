@@ -76,11 +76,6 @@ func (p *localEndpoint) OnMsgReceived(sender string, m proto.Message) error {
 	}
 }
 
-type MsgHeader struct {
-	sender  string
-	message proto.Message
-}
-
 type LocalNetwork struct {
 	sync.RWMutex
 	nodes map[int32]*localEndpoint

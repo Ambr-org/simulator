@@ -151,36 +151,36 @@ func (p *PublicKey) ToAddress() (string, error) {
 }
 
 //define for marshal
-type privateData struct {
-	key *Key
-	d   *big.Int
+type PrivateData struct {
+	Key *Key
+	D   *big.Int
 }
 
-func (p *privateData) intoPrivateKey() (*PrivateKey, error) {
-	if p.key == nil || p.d == nil {
+func (p *PrivateData) intoPrivateKey() (*PrivateKey, error) {
+	if p.Key == nil || p.D == nil {
 		return nil, errors.New("invalid parameter")
 	}
 
 	pub := &ecdsa.PublicKey{
 		Curve: elliptic.P256(),
-		X:     p.key.X,
-		Y:     p.key.Y,
+		X:     p.Key.X,
+		Y:     p.Key.Y,
 	}
 	ecdPrivateKey := &ecdsa.PrivateKey{
 		PublicKey: *pub,
-		D:         p.d,
+		D:         p.D,
 	}
 	return &PrivateKey{
 		PrivateKey: *ecdPrivateKey,
 	}, nil
 }
 
-func unmarshalPrivateData(bs []byte) (*privateData, error) {
+func unmarshalPrivateData(bs []byte) (*PrivateData, error) {
 	if bs == nil || len(bs) <= 0 {
 		return nil, errors.New("invalid paramenter")
 	}
 
-	d := &privateData{}
+	d := &PrivateData{}
 	var buf = bytes.Buffer{}
 	buf.Write(bs)
 	// Create a decoder and receive a value.
@@ -214,11 +214,11 @@ func FromStringToPrivateKey(str string) (*PrivateKey, error) {
 	return pd.intoPrivateKey()
 }
 
-func (p *PrivateKey) getData() *privateData {
+func (p *PrivateKey) getData() *PrivateData {
 	key := p.GetKeyData()
-	return &privateData{
-		key: key,
-		d:   p.D,
+	return &PrivateData{
+		Key: key,
+		D:   p.D,
 	}
 }
 

@@ -11,7 +11,7 @@ import (
 	"crypto/sha256"
 	"encoding/gob"
 	"errors"
-	"log"
+	"reflect"
 	"time"
 )
 
@@ -24,7 +24,6 @@ func Marshal(o interface{}) ([]byte, error) {
 	gob.Register(time.Time{})
 	err := enc.Encode(o)
 	if err != nil {
-		log.Fatal("encode:", err)
 		return nil, err
 	}
 
@@ -45,6 +44,9 @@ func GetSHA256Hash(datas [][]byte) []byte {
 
 	sha := sha256.New()
 	for _, data := range datas {
+		if data == nil {
+			continue
+		}
 		sha.Write(data)
 	}
 
@@ -57,6 +59,9 @@ func ArrayToBuf(datas [][]byte) ([]byte, error) {
 	}
 	result := []byte{}
 	for _, data := range datas {
+		if data == nil {
+			continue
+		}
 		result = append(result, data...)
 	}
 
@@ -73,6 +78,11 @@ func GetBytes(datas ...interface{}) ([][]byte, error) {
 
 	l := [][]byte{}
 	for _, data := range datas {
+		t := reflect.TypeOf(data)
+
+		if t.Kind() == reflect.Ptr && reflect.ValueOf(data).IsNil() {
+			continue
+		}
 		buf, e := Marshal(data)
 		if e != nil {
 			return nil, e
@@ -84,7 +94,7 @@ func GetBytes(datas ...interface{}) ([][]byte, error) {
 }
 
 func GetObjectHash(datas ...interface{}) ([]byte, error) {
-	l, err := GetBytes(datas)
+	l, err := GetBytes(datas...)
 	if err != nil {
 		return nil, err
 	}

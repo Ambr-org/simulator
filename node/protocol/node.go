@@ -96,7 +96,27 @@ func (p *Node) GetAccount(address string) *Account {
 
 //func transfer try to
 func (p *Node) Transfer(sender string, target string, amount int64) error {
-	return nil
+	if len(sender) <= 0 || len(target) <= 0 || amount <= 0 {
+		return errors.New("invalid parameters")
+	}
+	privKey, err := FromStringToPrivateKey(sender)
+	if err != nil {
+		return err
+	}
+	pub, err2 := FromAddress(target)
+	if err2 != nil {
+		return err2
+	}
+	pubKey := privKey.GetPublicKey()
+	address, e1 := pubKey.ToAddress()
+	if e1 != nil {
+		return e1
+	}
+	account, e2 := LoadAccount(p.DB, address)
+	if e2 != nil {
+		return e2
+	}
+	return account.StartTransfer(privKey, pub, amount)
 }
 
 //send unit received

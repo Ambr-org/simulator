@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	UnitSend = 1
-	UnitRecv = 2
+	UnitSend    = 1
+	UnitRecv    = 2
+	UnitGenesis = 0xff
 )
 
 type HashKeyType struct {
