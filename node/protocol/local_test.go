@@ -131,12 +131,47 @@ func test_setup() *Context {
 	return ctx
 }
 
+func test_1(t *testing.T, ctx *Context) {
+	var value int64 = 1000
+	sender := ctx.users[0]
+	target := ctx.users[1]
+
+	node1 := ctx.nodes[0]
+	nodex := ctx.nodes[3]
+
+	strSender, err := sender.signature.PrivateKey.ToString()
+	if err != nil {
+		t.Fatal(err)
+	}
+	strTarget, err2 := target.signature.PublicKey.ToAddress()
+	if err2 != nil {
+		t.Fatal(err2)
+	}
+
+	err3 := node1.Transfer(strSender, strTarget, value)
+	if err3 != nil {
+		t.Fatal(err3)
+	}
+
+	if x, ok := nodex.Accounts[strTarget]; ok {
+		balance, ex := x.GetAccountBalance()
+		if ex != nil {
+			log.Fatal(ex)
+		}
+
+		if balance != value {
+			log.Fatal("not equals")
+		}
+	}
+}
+
 func Test_transfer(t *testing.T) {
 	ctx := test_setup()
 
 	fmt.Println(ctx)
+	//test_1(t, ctx)
 
+	//testing
 	ctx.close()
 	tear_down()
-	//todo: transfer
 }
