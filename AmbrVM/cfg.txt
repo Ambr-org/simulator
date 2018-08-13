@@ -1,0 +1,8 @@
+<vm>
+	<general>
+		<dbpath>vm_db</dbpath>
+		<abifile>coin_sol_Coin.abi</abifile>
+		<binfile>coin_sol_Coin.bin</binfile>
+	</general>
+	<cache></cache>
+</vm>
